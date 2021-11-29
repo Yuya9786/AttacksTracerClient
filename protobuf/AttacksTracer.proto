@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "malwaresimulator.proto";
+
+option go_package = "github.com/Yuya9786/AttacksTracerClient/protobuf/protobuf";
+
+package malwaresimulator;
+
+service MalwareSimulator {
+  rpc ShowNet (ShowNetRequest)
+      returns (WholeNetwork) {}
+  rpc AddNode (AddNodeRequest)
+      returns (Node) {}
+  rpc AddNetwork (AddNetworkRequest)
+      returns (Network) {}
+  rpc MakeConnection (MakeConnectionRequest)
+      returns (WholeNetwork) {}
+  rpc Infect (InfectRequest)
+      returns (Node) {}
+}
+
+message ShowNetRequest {}
+
+message WholeNetwork {
+  repeated Network networks = 1;
+//  repeated Node isolatedNodes = 2;
+}
+
+message Network {
+  int32 id = 1;
+  string networkName = 2;
+  string address = 3;
+  int32 subnetMask = 4;
+  repeated Node nodes = 5;
+}
+
+message Node {
+  int32 id = 1;
+  string name = 2;
+  string address = 3;
+  repeated Application applications = 4;
+}
+
+message Application {
+  int32 id = 1;
+  string name = 2;
+}
+
+message AddNodeRequest {
+  string name = 1;
+  string address = 2;
+}
+
+message AddNetworkRequest {
+  string name = 1;
+  string address = 2;
+  int32 subnetMask = 3;
+}
+
+message MakeConnectionRequest {
+  int32 nodeId = 1;
+  string address = 2;
+  int32 subnetMask = 3;
+  int32 networkId = 4;
+}
+
+message InfectRequest {
+  int32 nodeId = 1;
+  string malwareName = 2;
+  string ccsAddress = 3;
+}
