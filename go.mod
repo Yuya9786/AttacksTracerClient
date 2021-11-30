@@ -1,4 +1,4 @@
-module AttacksTracerClient
+module github.com/Yuya9786/AttacksTracerClient
 
 go 1.17
 
