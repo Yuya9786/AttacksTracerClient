@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 
-	pb "github.com/Yuya9786/AttacksTracerClient/protobuf"
-
 	"google.golang.org/grpc"
 
 	"github.com/hpcloud/tail"
@@ -32,7 +30,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	c := pb.NewMalwareSimulatorClient(conn)
+	// c := pb.NewMalwareSimulatorClient(conn)
 
 	t, err := tail.TailFile(*file, tail.Config{ReOpen: true, Follow: true})
 	if err != nil {
