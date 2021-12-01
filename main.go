@@ -43,7 +43,7 @@ func main() {
 		if err := scan.ScanJSON(js, "/type", &s); err != nil {
 			log.Fatalf("failed to scan json: %v", err)
 		}
-
+		log.Println(s)
 	}
 
 	// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
