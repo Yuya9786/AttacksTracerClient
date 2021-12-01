@@ -1,15 +1,17 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 	"os"
-	"time"
+	"strings"
 
 	pb "github.com/Yuya9786/AttacksTracerClient/protobuf"
 
 	"google.golang.org/grpc"
+
+	"github.com/hpcloud/tail"
+	"github.com/mattn/go-scan"
 )
 
 var (
@@ -32,17 +34,32 @@ func main() {
 
 	c := pb.NewMalwareSimulatorClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.ShowNet(ctx, &pb.ShowNetRequest{})
+	t, err := tail.TailFile(*file, tail.Config{ReOpen: true, Follow: true})
 	if err != nil {
-		log.Fatalf("could not show net: %v", err)
+		log.Fatalf("cannot tail file: %v", err)
 	}
 
-	networks := r.GetNetworks()
-	log.Printf("ShowNet: %s", r.GetNetworks())
-	for n := range networks {
-		log.Println(n)
+	for line := range t.Lines {
+		var s string
+		js := strings.NewReader(line.Text)
+		if err := scan.ScanJSON(js, "/type", &s); err != nil {
+			log.Fatalf("failed to scan json: %v", err)
+		}
+
 	}
+
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	// defer cancel()
+
+	// r, err := c.ShowNet(ctx, &pb.ShowNetRequest{})
+	// if err != nil {
+	// 	log.Fatalf("could not show network: %v", err)
+	// }
+
+	// networks := r.GetNetworks()
+	// log.Printf("ShowNet: %s", r.GetNetworks())
+	// for n := range networks {
+	// 	log.Println(n)
+	// }
 
 }
