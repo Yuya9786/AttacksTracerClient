@@ -21,6 +21,7 @@ type MalwareSimulatorClient interface {
 	ShowNet(ctx context.Context, in *ShowNetRequest, opts ...grpc.CallOption) (*WholeNetwork, error)
 	AddNode(ctx context.Context, in *AddNodeRequest, opts ...grpc.CallOption) (*Node, error)
 	AddNetwork(ctx context.Context, in *AddNetworkRequest, opts ...grpc.CallOption) (*Network, error)
+	AddApplication(ctx context.Context, in *AddApplicationRequest, opts ...grpc.CallOption) (*Application, error)
 	MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*WholeNetwork, error)
 	Infect(ctx context.Context, in *InfectRequest, opts ...grpc.CallOption) (*Node, error)
 }
@@ -60,6 +61,15 @@ func (c *malwareSimulatorClient) AddNetwork(ctx context.Context, in *AddNetworkR
 	return out, nil
 }
 
+func (c *malwareSimulatorClient) AddApplication(ctx context.Context, in *AddApplicationRequest, opts ...grpc.CallOption) (*Application, error) {
+	out := new(Application)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/AddApplication", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *malwareSimulatorClient) MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*WholeNetwork, error) {
 	out := new(WholeNetwork)
 	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/MakeConnection", in, out, opts...)
@@ -85,6 +95,7 @@ type MalwareSimulatorServer interface {
 	ShowNet(context.Context, *ShowNetRequest) (*WholeNetwork, error)
 	AddNode(context.Context, *AddNodeRequest) (*Node, error)
 	AddNetwork(context.Context, *AddNetworkRequest) (*Network, error)
+	AddApplication(context.Context, *AddApplicationRequest) (*Application, error)
 	MakeConnection(context.Context, *MakeConnectionRequest) (*WholeNetwork, error)
 	Infect(context.Context, *InfectRequest) (*Node, error)
 	mustEmbedUnimplementedMalwareSimulatorServer()
@@ -102,6 +113,9 @@ func (UnimplementedMalwareSimulatorServer) AddNode(context.Context, *AddNodeRequ
 }
 func (UnimplementedMalwareSimulatorServer) AddNetwork(context.Context, *AddNetworkRequest) (*Network, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddNetwork not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) AddApplication(context.Context, *AddApplicationRequest) (*Application, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddApplication not implemented")
 }
 func (UnimplementedMalwareSimulatorServer) MakeConnection(context.Context, *MakeConnectionRequest) (*WholeNetwork, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MakeConnection not implemented")
@@ -176,6 +190,24 @@ func _MalwareSimulator_AddNetwork_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MalwareSimulator_AddApplication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddApplicationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).AddApplication(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/AddApplication",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).AddApplication(ctx, req.(*AddApplicationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _MalwareSimulator_MakeConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MakeConnectionRequest)
 	if err := dec(in); err != nil {
@@ -230,6 +262,10 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddNetwork",
 			Handler:    _MalwareSimulator_AddNetwork_Handler,
+		},
+		{
+			MethodName: "AddApplication",
+			Handler:    _MalwareSimulator_AddApplication_Handler,
 		},
 		{
 			MethodName: "MakeConnection",

@@ -14,6 +14,8 @@ service MalwareSimulator {
       returns (Node) {}
   rpc AddNetwork (AddNetworkRequest)
       returns (Network) {}
+  rpc AddApplication (AddApplicationRequest)
+      returns (Application) {}
   rpc MakeConnection (MakeConnectionRequest)
       returns (WholeNetwork) {}
   rpc Infect (InfectRequest)
@@ -56,6 +58,10 @@ message AddNetworkRequest {
   string name = 1;
   string address = 2;
   int32 subnetMask = 3;
+}
+
+message AddApplicationRequest {
+  string name = 1;
 }
 
 message MakeConnectionRequest {
