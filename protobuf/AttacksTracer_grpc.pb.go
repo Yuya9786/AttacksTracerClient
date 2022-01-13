@@ -18,7 +18,6 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MalwareSimulatorClient interface {
-	ShowNet(ctx context.Context, in *ShowNetRequest, opts ...grpc.CallOption) (*WholeNetwork, error)
 	AddNode(ctx context.Context, in *AddNodeRequest, opts ...grpc.CallOption) (*Node, error)
 	AddNetwork(ctx context.Context, in *AddNetworkRequest, opts ...grpc.CallOption) (*Network, error)
 	AddApplication(ctx context.Context, in *AddApplicationRequest, opts ...grpc.CallOption) (*Application, error)
@@ -32,15 +31,6 @@ type malwareSimulatorClient struct {
 
 func NewMalwareSimulatorClient(cc grpc.ClientConnInterface) MalwareSimulatorClient {
 	return &malwareSimulatorClient{cc}
-}
-
-func (c *malwareSimulatorClient) ShowNet(ctx context.Context, in *ShowNetRequest, opts ...grpc.CallOption) (*WholeNetwork, error) {
-	out := new(WholeNetwork)
-	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/ShowNet", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *malwareSimulatorClient) AddNode(ctx context.Context, in *AddNodeRequest, opts ...grpc.CallOption) (*Node, error) {
@@ -92,7 +82,6 @@ func (c *malwareSimulatorClient) Infect(ctx context.Context, in *InfectRequest, 
 // All implementations must embed UnimplementedMalwareSimulatorServer
 // for forward compatibility
 type MalwareSimulatorServer interface {
-	ShowNet(context.Context, *ShowNetRequest) (*WholeNetwork, error)
 	AddNode(context.Context, *AddNodeRequest) (*Node, error)
 	AddNetwork(context.Context, *AddNetworkRequest) (*Network, error)
 	AddApplication(context.Context, *AddApplicationRequest) (*Application, error)
@@ -105,9 +94,6 @@ type MalwareSimulatorServer interface {
 type UnimplementedMalwareSimulatorServer struct {
 }
 
-func (UnimplementedMalwareSimulatorServer) ShowNet(context.Context, *ShowNetRequest) (*WholeNetwork, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowNet not implemented")
-}
 func (UnimplementedMalwareSimulatorServer) AddNode(context.Context, *AddNodeRequest) (*Node, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddNode not implemented")
 }
@@ -134,24 +120,6 @@ type UnsafeMalwareSimulatorServer interface {
 
 func RegisterMalwareSimulatorServer(s grpc.ServiceRegistrar, srv MalwareSimulatorServer) {
 	s.RegisterService(&MalwareSimulator_ServiceDesc, srv)
-}
-
-func _MalwareSimulator_ShowNet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ShowNetRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MalwareSimulatorServer).ShowNet(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/malwaresimulator.MalwareSimulator/ShowNet",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MalwareSimulatorServer).ShowNet(ctx, req.(*ShowNetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _MalwareSimulator_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -252,10 +220,6 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MalwareSimulatorServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ShowNet",
-			Handler:    _MalwareSimulator_ShowNet_Handler,
-		},
-		{
 			MethodName: "AddNode",
 			Handler:    _MalwareSimulator_AddNode_Handler,
 		},
@@ -277,5 +241,5 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "AttacksTracer.proto",
+	Metadata: "protobuf/AttacksTracer.proto",
 }

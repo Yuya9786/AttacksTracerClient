@@ -8,8 +8,6 @@ option go_package = "github.com/Yuya9786/AttacksTracerClient/protobuf/protobuf";
 package malwaresimulator;
 
 service MalwareSimulator {
-  rpc ShowNet (ShowNetRequest)
-      returns (WholeNetwork) {}
   rpc AddNode (AddNodeRequest)
       returns (Node) {}
   rpc AddNetwork (AddNetworkRequest)
@@ -17,7 +15,7 @@ service MalwareSimulator {
   rpc AddApplication (AddApplicationRequest)
       returns (Application) {}
   rpc MakeConnection (MakeConnectionRequest)
-      returns (WholeNetwork) {}
+      returns (Network) {}
   rpc Infect (InfectRequest)
       returns (Node) {}
 }
@@ -40,8 +38,13 @@ message Network {
 message Node {
   int32 id = 1;
   string name = 2;
-  string address = 3;
+  repeated Connection connections = 3;
   repeated Application applications = 4;
+}
+
+message Connection {
+  string address = 1;
+  int32 subnetMask = 2;
 }
 
 message Application {
@@ -51,7 +54,6 @@ message Application {
 
 message AddNodeRequest {
   string name = 1;
-  string address = 2;
 }
 
 message AddNetworkRequest {
@@ -62,13 +64,14 @@ message AddNetworkRequest {
 
 message AddApplicationRequest {
   string name = 1;
+  int32 nodeId = 2;
 }
 
 message MakeConnectionRequest {
   int32 nodeId = 1;
-  string address = 2;
-  int32 subnetMask = 3;
-  int32 networkId = 4;
+  int32 networkId = 2;
+  string address = 3;
+  int32 subnetMask = 4;
 }
 
 message InfectRequest {
