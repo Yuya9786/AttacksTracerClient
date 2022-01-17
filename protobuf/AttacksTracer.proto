@@ -18,6 +18,10 @@ service MalwareSimulator {
       returns (Network) {}
   rpc Infect (InfectRequest)
       returns (Node) {}
+  rpc AddRoute (AddRouteRequest) 
+      returns (AddRouteReply) {}
+  rpc SendPacket (SendPacketRequest)
+      returns (SendPacketReply) {}
 }
 
 message ShowNetRequest {}
@@ -64,18 +68,39 @@ message AddNetworkRequest {
 
 message AddApplicationRequest {
   string name = 1;
-  int32 nodeId = 2;
+  int32 nodeID = 2;
 }
 
 message MakeConnectionRequest {
-  int32 nodeId = 1;
-  int32 networkId = 2;
+  int32 nodeID = 1;
+  int32 networkID = 2;
   string address = 3;
   int32 subnetMask = 4;
 }
 
 message InfectRequest {
-  int32 nodeId = 1;
+  int32 nodeID = 1;
   string malwareName = 2;
   string ccsAddress = 3;
 }
+
+message AddRouteRequest {
+  int32 nodeID = 1;
+  string dstAddress = 2;
+  int32 mask = 3;
+  string nexthop = 4;
+  int32 netID = 5;
+}
+
+message AddRouteReply {}
+
+message SendPacketRequest {
+  int32 appID = 1;
+  string srcAddress = 2;
+  int32 srcPort = 3;
+  string dstAddress = 4;
+  int32 dstPort = 5;
+  bytes data = 6;
+}
+
+message SendPacketReply {}

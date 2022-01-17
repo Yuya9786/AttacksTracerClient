@@ -21,8 +21,10 @@ type MalwareSimulatorClient interface {
 	AddNode(ctx context.Context, in *AddNodeRequest, opts ...grpc.CallOption) (*Node, error)
 	AddNetwork(ctx context.Context, in *AddNetworkRequest, opts ...grpc.CallOption) (*Network, error)
 	AddApplication(ctx context.Context, in *AddApplicationRequest, opts ...grpc.CallOption) (*Application, error)
-	MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*WholeNetwork, error)
+	MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*Network, error)
 	Infect(ctx context.Context, in *InfectRequest, opts ...grpc.CallOption) (*Node, error)
+	AddRoute(ctx context.Context, in *AddRouteRequest, opts ...grpc.CallOption) (*AddRouteReply, error)
+	SendPacket(ctx context.Context, in *SendPacketRequest, opts ...grpc.CallOption) (*SendPacketReply, error)
 }
 
 type malwareSimulatorClient struct {
@@ -60,8 +62,8 @@ func (c *malwareSimulatorClient) AddApplication(ctx context.Context, in *AddAppl
 	return out, nil
 }
 
-func (c *malwareSimulatorClient) MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*WholeNetwork, error) {
-	out := new(WholeNetwork)
+func (c *malwareSimulatorClient) MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*Network, error) {
+	out := new(Network)
 	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/MakeConnection", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -78,6 +80,24 @@ func (c *malwareSimulatorClient) Infect(ctx context.Context, in *InfectRequest, 
 	return out, nil
 }
 
+func (c *malwareSimulatorClient) AddRoute(ctx context.Context, in *AddRouteRequest, opts ...grpc.CallOption) (*AddRouteReply, error) {
+	out := new(AddRouteReply)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/AddRoute", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *malwareSimulatorClient) SendPacket(ctx context.Context, in *SendPacketRequest, opts ...grpc.CallOption) (*SendPacketReply, error) {
+	out := new(SendPacketReply)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/SendPacket", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MalwareSimulatorServer is the server API for MalwareSimulator service.
 // All implementations must embed UnimplementedMalwareSimulatorServer
 // for forward compatibility
@@ -85,8 +105,10 @@ type MalwareSimulatorServer interface {
 	AddNode(context.Context, *AddNodeRequest) (*Node, error)
 	AddNetwork(context.Context, *AddNetworkRequest) (*Network, error)
 	AddApplication(context.Context, *AddApplicationRequest) (*Application, error)
-	MakeConnection(context.Context, *MakeConnectionRequest) (*WholeNetwork, error)
+	MakeConnection(context.Context, *MakeConnectionRequest) (*Network, error)
 	Infect(context.Context, *InfectRequest) (*Node, error)
+	AddRoute(context.Context, *AddRouteRequest) (*AddRouteReply, error)
+	SendPacket(context.Context, *SendPacketRequest) (*SendPacketReply, error)
 	mustEmbedUnimplementedMalwareSimulatorServer()
 }
 
@@ -103,11 +125,17 @@ func (UnimplementedMalwareSimulatorServer) AddNetwork(context.Context, *AddNetwo
 func (UnimplementedMalwareSimulatorServer) AddApplication(context.Context, *AddApplicationRequest) (*Application, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddApplication not implemented")
 }
-func (UnimplementedMalwareSimulatorServer) MakeConnection(context.Context, *MakeConnectionRequest) (*WholeNetwork, error) {
+func (UnimplementedMalwareSimulatorServer) MakeConnection(context.Context, *MakeConnectionRequest) (*Network, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MakeConnection not implemented")
 }
 func (UnimplementedMalwareSimulatorServer) Infect(context.Context, *InfectRequest) (*Node, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Infect not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) AddRoute(context.Context, *AddRouteRequest) (*AddRouteReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddRoute not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) SendPacket(context.Context, *SendPacketRequest) (*SendPacketReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendPacket not implemented")
 }
 func (UnimplementedMalwareSimulatorServer) mustEmbedUnimplementedMalwareSimulatorServer() {}
 
@@ -212,6 +240,42 @@ func _MalwareSimulator_Infect_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MalwareSimulator_AddRoute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddRouteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).AddRoute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/AddRoute",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).AddRoute(ctx, req.(*AddRouteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MalwareSimulator_SendPacket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendPacketRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).SendPacket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/SendPacket",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).SendPacket(ctx, req.(*SendPacketRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MalwareSimulator_ServiceDesc is the grpc.ServiceDesc for MalwareSimulator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -238,6 +302,14 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Infect",
 			Handler:    _MalwareSimulator_Infect_Handler,
+		},
+		{
+			MethodName: "AddRoute",
+			Handler:    _MalwareSimulator_AddRoute_Handler,
+		},
+		{
+			MethodName: "SendPacket",
+			Handler:    _MalwareSimulator_SendPacket_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
