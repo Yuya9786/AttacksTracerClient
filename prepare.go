@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	pb "github.com/Yuya9786/AttacksTracerClient/protobuf"
 	"github.com/pkg/errors"
@@ -11,107 +9,53 @@ import (
 
 func prepare(c pb.MalwareSimulatorClient) error {
 	fmt.Println("Start to prepare simulating environments.")
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		10*time.Second,
-	)
-	defer cancel()
 
-	node1 := pb.AddNodeRequest{
-		Name: "cf:1",
-	}
-	fmt.Println("Send AddNode(cf:1)")
-	resultNode, err := c.AddNode(ctx, &node1)
+	resultNode, err := addNode(c, "cf:1")
 	if err != nil {
 		return errors.Wrap(err, "failed to send AddNode")
 	}
 
-	actorMap[resultNode.GetName()] = resultNode
+	knownNodes[resultNode.GetName()] = resultNode
 
-	network := pb.AddNetworkRequest{
-		Name:       "LAN",
-		Address:    "172.31.16.0",
-		SubnetMask: 20,
-	}
-	fmt.Printf("Send AddNetwork(%+v)\n", &network)
-	resultNet, err := c.AddNetwork(ctx, &network)
+	resultNet, err := addNetwork(c, "LAN", "172.31.16.0", 20)
 	if err != nil {
 		return errors.Wrap(err, "failed to send AddNetwork")
 	}
-	actorMap[resultNet.GetNetworkName()] = resultNet
+	networks[resultNet.GetNetworkName()] = resultNet
 
-	makeConnectionRequest := pb.MakeConnectionRequest{
-		NodeID:     actorMap[resultNode.GetName()].(*pb.Node).GetId(),
-		NetworkID:  actorMap[resultNet.GetNetworkName()].(*pb.Network).GetId(),
-		Address:    "172.31.17.125",
-		SubnetMask: 20,
-	}
-	fmt.Printf("Send MakeConnection(%+v)\n", &makeConnectionRequest)
-	resultNet, err = c.MakeConnection(ctx, &makeConnectionRequest)
+	nodeID := knownNodes["cf:1"].GetId()
+	netID := networks["LAN"].GetId()
+	_, err = makeConnection(c, int(nodeID), int(netID), "172.31.17.125", 20)
 	if err != nil {
 		return errors.Wrap(err, "failed to send MakeConnection")
 	}
 
-
-	addRouteRequest := pb.AddRouteRequest {
-		NodeID: actorMap[resultNode.GetName()].(*pb.Node).GetId(),
-		DstAddress: "0.0.0.0",
-		Mask: 0,
-		Nexthop: "172.31.16.1",
-		NetID: actorMap[network.Name].(*pb.Network).GetId(),
-	}
-	fmt.Printf("Send AddRoute(%+v)\n", &addRouteRequest)
-	_, err = c.AddRoute(ctx, &addRouteRequest)
+	_, err = addRoute(c, int(nodeID), "0.0.0.0", 0, "172.31.16.1", int(netID))
 	if err != nil {
 		return errors.Wrap(err, "failed to send AddRoute")
 	}
 
-	internet := pb.AddNetworkRequest{
-		Name:       "Internet",
-		Address:    "0.0.0.0",
-		SubnetMask: 0,
-	}
-
-	fmt.Printf("Send AddNetwork(%+v)\n", &internet)
-	resultNet, err = c.AddNetwork(ctx, &internet)
+	resultNet, err = addNetwork(c, "Internet", "0.0.0.0", 0)
 	if err != nil {
 		return errors.Wrap(err, "failed to send AddNetwork")
 	}
-	actorMap[resultNet.GetNetworkName()] = resultNet
+	networks[resultNet.GetNetworkName()] = resultNet
 
-	router := pb.AddNodeRequest{
-		Name: "Router",
-	}
-
-	fmt.Println("Send AddNode(Router))")
-	resultNode, err = c.AddNode(ctx, &router)
+	resultNode, err = addNode(c, "Router")
 	if err != nil {
 		return errors.Wrap(err, "failed to send AddNode")
 	}
-	actorMap[resultNode.GetName()] = resultNode
+	unknownNodes[resultNode.GetName()] = resultNode
 
-	makeConnectionRequest = pb.MakeConnectionRequest{
-		NodeID:     actorMap[resultNode.GetName()].(*pb.Node).GetId(),
-		NetworkID:  actorMap[internet.Name].(*pb.Network).GetId(),
-		Address:    "18.181.233.66",
-		SubnetMask: 24,
-	}
-
-	fmt.Printf("Send MakeConnection(%+v)\n", &makeConnectionRequest)
-	_, err = c.MakeConnection(ctx, &makeConnectionRequest)
+	nodeID = unknownNodes["Router"].GetId()
+	netID = networks["Internet"].GetId()
+	_, err = makeConnection(c, int(nodeID), int(netID), "18.181.233.66", 0)
 	if err != nil {
 		return errors.Wrap(err, "failed to send MakeConnection")
 	}
 
-	makeConnectionRequest = pb.MakeConnectionRequest{
-		NodeID:     actorMap[resultNode.GetName()].(*pb.Node).GetId(),
-		NetworkID:  actorMap[network.Name].(*pb.Network).GetId(),
-		Address:    "172.31.16.1",
-		SubnetMask: 20,
-	}
-
-	fmt.Printf("Send MakeConnection(%+v)\n", &makeConnectionRequest)
-	_, err = c.MakeConnection(ctx, &makeConnectionRequest)
+	netID = networks["LAN"].GetId()
+	_, err = makeConnection(c, int(nodeID), int(netID), "172.31.16.1", 20)
 	if err != nil {
 		return errors.Wrap(err, "failed to send MakeConnection")
 	}

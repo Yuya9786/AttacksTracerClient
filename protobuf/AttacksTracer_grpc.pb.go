@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MalwareSimulatorClient interface {
 	AddNode(ctx context.Context, in *AddNodeRequest, opts ...grpc.CallOption) (*Node, error)
+	UpdateNodeInfo(ctx context.Context, in *UpdateNodeInfoRequest, opts ...grpc.CallOption) (*Node, error)
 	AddNetwork(ctx context.Context, in *AddNetworkRequest, opts ...grpc.CallOption) (*Network, error)
 	AddApplication(ctx context.Context, in *AddApplicationRequest, opts ...grpc.CallOption) (*Application, error)
 	MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*Network, error)
@@ -38,6 +39,15 @@ func NewMalwareSimulatorClient(cc grpc.ClientConnInterface) MalwareSimulatorClie
 func (c *malwareSimulatorClient) AddNode(ctx context.Context, in *AddNodeRequest, opts ...grpc.CallOption) (*Node, error) {
 	out := new(Node)
 	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/AddNode", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *malwareSimulatorClient) UpdateNodeInfo(ctx context.Context, in *UpdateNodeInfoRequest, opts ...grpc.CallOption) (*Node, error) {
+	out := new(Node)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/UpdateNodeInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +113,7 @@ func (c *malwareSimulatorClient) SendPacket(ctx context.Context, in *SendPacketR
 // for forward compatibility
 type MalwareSimulatorServer interface {
 	AddNode(context.Context, *AddNodeRequest) (*Node, error)
+	UpdateNodeInfo(context.Context, *UpdateNodeInfoRequest) (*Node, error)
 	AddNetwork(context.Context, *AddNetworkRequest) (*Network, error)
 	AddApplication(context.Context, *AddApplicationRequest) (*Application, error)
 	MakeConnection(context.Context, *MakeConnectionRequest) (*Network, error)
@@ -118,6 +129,9 @@ type UnimplementedMalwareSimulatorServer struct {
 
 func (UnimplementedMalwareSimulatorServer) AddNode(context.Context, *AddNodeRequest) (*Node, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddNode not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) UpdateNodeInfo(context.Context, *UpdateNodeInfoRequest) (*Node, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateNodeInfo not implemented")
 }
 func (UnimplementedMalwareSimulatorServer) AddNetwork(context.Context, *AddNetworkRequest) (*Network, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddNetwork not implemented")
@@ -164,6 +178,24 @@ func _MalwareSimulator_AddNode_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MalwareSimulatorServer).AddNode(ctx, req.(*AddNodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MalwareSimulator_UpdateNodeInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateNodeInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).UpdateNodeInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/UpdateNodeInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).UpdateNodeInfo(ctx, req.(*UpdateNodeInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -286,6 +318,10 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddNode",
 			Handler:    _MalwareSimulator_AddNode_Handler,
+		},
+		{
+			MethodName: "UpdateNodeInfo",
+			Handler:    _MalwareSimulator_UpdateNodeInfo_Handler,
 		},
 		{
 			MethodName: "AddNetwork",

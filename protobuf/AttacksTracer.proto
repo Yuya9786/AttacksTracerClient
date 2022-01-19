@@ -10,6 +10,8 @@ package malwaresimulator;
 service MalwareSimulator {
   rpc AddNode (AddNodeRequest)
       returns (Node) {}
+  rpc UpdateNodeInfo (UpdateNodeInfoRequest)
+      returns (Node) {}
   rpc AddNetwork (AddNetworkRequest)
       returns (Network) {}
   rpc AddApplication (AddApplicationRequest)
@@ -58,6 +60,10 @@ message Application {
 
 message AddNodeRequest {
   string name = 1;
+}
+
+message UpdateNodeInfoRequest {
+  int32 id = 1;
 }
 
 message AddNetworkRequest {

@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	pb "github.com/Yuya9786/AttacksTracerClient/protobuf"
 	_ "github.com/lib/pq"
@@ -75,7 +73,10 @@ type RelationAnnotations struct {
 }
 
 var (
-	actorMap map[string]interface{}
+	networks     = map[string]*pb.Network{}
+	knownNodes   = map[string]*pb.Node{}
+	unknownNodes = map[string]*pb.Node{}
+	applications = map[string]*pb.Application{}
 )
 
 func client() error {
@@ -101,14 +102,12 @@ func client() error {
 
 	c := pb.NewMalwareSimulatorClient(conn)
 
-	actorMap = map[string]interface{}{}
-
 	err = prepare(c)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare")
 	}
 
-	err = sendPacket(db, c)
+	err = sendPacketQuery(db, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to sendPacket")
 	}
@@ -116,7 +115,7 @@ func client() error {
 	return nil
 }
 
-func sendPacket(db *sql.DB, c pb.MalwareSimulatorClient) error {
+func sendPacketQuery(db *sql.DB, c pb.MalwareSimulatorClient) error {
 	rows, err := db.Query("select * from data where record->'annotations'->>'relation_type'='send_packet';")
 	defer rows.Close()
 	if err != nil {
@@ -153,32 +152,96 @@ func sendPacket(db *sql.DB, c pb.MalwareSimulatorClient) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to convert to int")
 		}
+
 		receiver := strings.Split(packet.Receiver, ":")
 		dstPort, err := strconv.Atoi(receiver[1])
 		if err != nil {
 			return errors.Wrap(err, "failed to convert to int")
 		}
+		if status := addrsssCheck(receiver[0]); status == 0 {
+			resultNode, err := addNode(c, receiver[0])
+			if err != nil {
+				return errors.Wrap(err, "failed to addNode")
+			}
+			unknownNodes[resultNode.GetName()] = resultNode
 
-		ctx, cancel := context.WithTimeout(
-			context.Background(),
-			time.Second,
-		)
-		defer cancel()
+			senderAddr, err := inetAddress(sender[0])
+			if err != nil {
+				return errors.Wrap(err, "failed to inetAddress")
+			}
+			receiverAddr, err := inetAddress(receiver[0])
+			if err != nil {
+				return errors.Wrap(err, "failed to inetAddress")
+			}
 
-		request := &pb.SendPacketRequest{
-			AppID:      int32(task),
-			SrcAddress: sender[0],
-			SrcPort:    int32(srcPort),
-			DstAddress: receiver[0],
-			DstPort:    int32(dstPort),
-			Data:       []byte(string(packet.PacketID)),
+			receiverMask := -1
+			var receiverNet *pb.Network
+			senderMask := -1
+			var senderNet *pb.Network
+			for _, v := range networks {
+				netAddr, err := inetAddress(v.Address)
+				if err != nil {
+					return errors.Wrap(err, "failed to inetAddress")
+				}
+
+				if netAddr.isSameNetwork(senderAddr, int(v.SubnetMask)) {
+					if v.GetSubnetMask() > int32(senderMask) {
+						senderNet = v
+						senderMask = int(v.GetSubnetMask())
+					}
+				}
+
+				if netAddr.isSameNetwork(receiverAddr, int(v.SubnetMask)) {
+					if v.GetSubnetMask() > int32(receiverMask) {
+						receiverNet = v
+						receiverMask = int(v.GetSubnetMask())
+					}
+				}
+			}
+			if senderNet == nil {
+				return errors.New("sender network is not found")
+			}
+
+			if receiverNet == nil {
+				return errors.New("receiver network is not found")
+			}
+
+			_, err = makeConnection(c, int(resultNode.GetId()), int(receiverNet.GetId()), receiver[0], int(receiverNet.SubnetMask))
+			if err != nil {
+				return errors.Wrap(err, "failed to makeConnection")
+			}
+			resultNode, err = updateNodeInfo(c, int(resultNode.GetId()))
+			if err != nil {
+				return errors.Wrap(err, "failed to updateNodeInfo")
+			}
+			unknownNodes[receiver[0]] = resultNode
+
+			router := unknownNodes["Router"]
+			r, err := updateNodeInfo(c, int(router.GetId()))
+			if err != nil {
+				return errors.Wrap(err, "failed to updateNodeInfo")
+			}
+			unknownNodes["Router"] = r
+			
+			var nexthop *string
+			for _, v := range r.Connections {
+				if v.SubnetMask == 0 {
+					nexthop = &v.Address
+				}
+			}
+			if nexthop == nil {
+				return errors.New("router address is not found")
+			}
+			_, err = addRoute(c, int(resultNode.GetId()), senderNet.GetAddress(), int(senderNet.GetSubnetMask()), *nexthop, int(networks["Internet"].GetId()))
+			if err != nil {
+				return errors.Wrap(err, "failed to addRoute")
+			}
 		}
-		fmt.Printf("SendPacket(%+v)", request)
-		_, err = c.SendPacket(ctx, request)
+
+		_, err = sendPacket(c, task, sender[0], srcPort, receiver[0], dstPort, []byte(string(packet.PacketID)))
 		if err != nil {
 			return errors.Wrap(err, "failed to SendPacket")
 		}
-		fmt.Printf("Succeeded to SendPacket(%+v)", request)
 	}
 
 	return nil
@@ -220,10 +283,9 @@ func socketToTask(db *sql.DB, c pb.MalwareSimulatorClient, socketID string) (int
 }
 
 func task(db *sql.DB, c pb.MalwareSimulatorClient, id string) (int, error) {
-	v, ok := actorMap[id]
+	v, ok := applications[id]
 	if ok {
-		task := v.(*pb.Application)
-		return int(task.Id), nil
+		return int(v.GetId()), nil
 	}
 
 	query := fmt.Sprintf("select * from data where record->>'from'='%v';", id)
@@ -270,25 +332,12 @@ func task(db *sql.DB, c pb.MalwareSimulatorClient, id string) (int, error) {
 			return 0, errors.Wrap(err, "failed to unmarshal")
 		}
 
-		ctx, cancel := context.WithTimeout(
-			context.Background(),
-			time.Second,
-		)
-		defer cancel()
-
-		node := actorMap[vertice.Annotations.MachineID].(*pb.Node)
-		request := pb.AddApplicationRequest{
-			Name:   fmt.Sprintf("%s:%d", vertice.Annotations.MachineID, vertice.Annotations.PID),
-			NodeID: node.GetId(),
-		}
-		fmt.Printf("Send AddApplication(%+v)\n", &request)
-		application, err := c.AddApplication(ctx, &request)
+		node := knownNodes[vertice.Annotations.MachineID]
+		application, err := addApplication(c, fmt.Sprintf("%s:%d", vertice.Annotations.MachineID, vertice.Annotations.PID), int(node.GetId()))
 		if err != nil {
 			return 0, errors.Wrap(err, "failed to AddApplication")
 		}
-		fmt.Printf("Succeded to send AddApplication(%+v)\n", &request)
-
-		actorMap[id] = application
+		applications[id] = application
 
 		return int(application.GetId()), nil
 	}
@@ -343,4 +392,24 @@ func getPacket(db *sql.DB, id string) (*Packet, error) {
 	}
 
 	return packet, nil
+}
+
+func addrsssCheck(address string) int {
+	for _, v := range knownNodes {
+		for _, av := range v.Connections {
+			if av.Address == address {
+				return 1
+			}
+		}
+	}
+
+	for _, v := range unknownNodes {
+		for _, av := range v.Connections {
+			if av.Address == address {
+				return 2
+			}
+		}
+	}
+
+	return 0
 }
