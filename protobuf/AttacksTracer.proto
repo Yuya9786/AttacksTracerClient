@@ -16,6 +16,8 @@ service MalwareSimulator {
       returns (Network) {}
   rpc AddApplication (AddApplicationRequest)
       returns (Application) {}
+  rpc Remove (RemoveRequest)
+      returns (RemoveReply) {}
   rpc MakeConnection (MakeConnectionRequest)
       returns (Network) {}
   rpc Infect (InfectRequest)
@@ -76,6 +78,12 @@ message AddApplicationRequest {
   string name = 1;
   int32 nodeID = 2;
 }
+
+message RemoveRequest {
+  int32 id = 1;
+}
+
+message RemoveReply {}
 
 message MakeConnectionRequest {
   int32 nodeID = 1;

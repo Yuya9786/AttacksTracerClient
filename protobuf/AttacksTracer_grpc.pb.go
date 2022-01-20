@@ -22,6 +22,7 @@ type MalwareSimulatorClient interface {
 	UpdateNodeInfo(ctx context.Context, in *UpdateNodeInfoRequest, opts ...grpc.CallOption) (*Node, error)
 	AddNetwork(ctx context.Context, in *AddNetworkRequest, opts ...grpc.CallOption) (*Network, error)
 	AddApplication(ctx context.Context, in *AddApplicationRequest, opts ...grpc.CallOption) (*Application, error)
+	Remove(ctx context.Context, in *RemoveRequest, opts ...grpc.CallOption) (*RemoveReply, error)
 	MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*Network, error)
 	Infect(ctx context.Context, in *InfectRequest, opts ...grpc.CallOption) (*Node, error)
 	AddRoute(ctx context.Context, in *AddRouteRequest, opts ...grpc.CallOption) (*AddRouteReply, error)
@@ -72,6 +73,15 @@ func (c *malwareSimulatorClient) AddApplication(ctx context.Context, in *AddAppl
 	return out, nil
 }
 
+func (c *malwareSimulatorClient) Remove(ctx context.Context, in *RemoveRequest, opts ...grpc.CallOption) (*RemoveReply, error) {
+	out := new(RemoveReply)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/Remove", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *malwareSimulatorClient) MakeConnection(ctx context.Context, in *MakeConnectionRequest, opts ...grpc.CallOption) (*Network, error) {
 	out := new(Network)
 	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/MakeConnection", in, out, opts...)
@@ -116,6 +126,7 @@ type MalwareSimulatorServer interface {
 	UpdateNodeInfo(context.Context, *UpdateNodeInfoRequest) (*Node, error)
 	AddNetwork(context.Context, *AddNetworkRequest) (*Network, error)
 	AddApplication(context.Context, *AddApplicationRequest) (*Application, error)
+	Remove(context.Context, *RemoveRequest) (*RemoveReply, error)
 	MakeConnection(context.Context, *MakeConnectionRequest) (*Network, error)
 	Infect(context.Context, *InfectRequest) (*Node, error)
 	AddRoute(context.Context, *AddRouteRequest) (*AddRouteReply, error)
@@ -138,6 +149,9 @@ func (UnimplementedMalwareSimulatorServer) AddNetwork(context.Context, *AddNetwo
 }
 func (UnimplementedMalwareSimulatorServer) AddApplication(context.Context, *AddApplicationRequest) (*Application, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddApplication not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) Remove(context.Context, *RemoveRequest) (*RemoveReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Remove not implemented")
 }
 func (UnimplementedMalwareSimulatorServer) MakeConnection(context.Context, *MakeConnectionRequest) (*Network, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MakeConnection not implemented")
@@ -236,6 +250,24 @@ func _MalwareSimulator_AddApplication_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MalwareSimulator_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).Remove(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/Remove",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).Remove(ctx, req.(*RemoveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _MalwareSimulator_MakeConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MakeConnectionRequest)
 	if err := dec(in); err != nil {
@@ -330,6 +362,10 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddApplication",
 			Handler:    _MalwareSimulator_AddApplication_Handler,
+		},
+		{
+			MethodName: "Remove",
+			Handler:    _MalwareSimulator_Remove_Handler,
 		},
 		{
 			MethodName: "MakeConnection",
