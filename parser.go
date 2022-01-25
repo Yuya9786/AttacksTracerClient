@@ -71,13 +71,17 @@ type RelationAnnotations struct {
 	RelationType string `json:"relation_type"`
 }
 
-func sendReceivePacket(db *sql.DB, c pb.MalwareSimulatorClient) error {
-	rows, err := db.Query(
-		"select * from data where record->'annotations'->>'relation_type'='send_packet' or record->'annotations'->>'relation_type'='receive_packet';")
-	defer rows.Close()
+func parser(db *sql.DB, c pb.MalwareSimulatorClient) error {
+	query := `select * from data where 
+	record->'annotations'->>'relation_type'='send_packet' or 
+	record->'annotations'->>'relation_type'='receive_packet' or
+	record->'annotations'->>'relation_type'='read';
+	`
+	rows, err := db.Query(query)
 	if err != nil {
 		return errors.Wrap(err, "failed to query on db")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var data Data
@@ -92,9 +96,17 @@ func sendReceivePacket(db *sql.DB, c pb.MalwareSimulatorClient) error {
 		}
 
 		if relation.Annotations.RelationType == "send_packet" {
-			sendPacketQuery(db, c, &relation)
+			if err = sendPacketQuery(db, c, &relation); err != nil {
+				return errors.Wrap(err, "failed to sendPacketQuery")
+			}
 		} else if relation.Annotations.RelationType == "receive_packet" {
-			receivePacketQuey(db, c, &relation)
+			if err = receivePacketQuey(db, c, &relation); err != nil {
+				return errors.Wrap(err, "failed to receivePacketQuery")
+			}
+		} else if relation.Annotations.RelationType == "read" {
+			if err = read(db, c, &relation); err != nil {
+				return errors.Wrap(err, "failed to read")
+			}
 		}
 	}
 
@@ -353,10 +365,10 @@ func receivePacketQuey(db *sql.DB, c pb.MalwareSimulatorClient, relation *Relati
 func socketToTask(db *sql.DB, c pb.MalwareSimulatorClient, socketID string) (int, error) {
 	query := fmt.Sprintf("select * from data where record->>'from'='%v';", socketID)
 	rows, err := db.Query(query)
-	defer rows.Close()
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to query on db")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var data Data
@@ -393,10 +405,10 @@ func task(db *sql.DB, c pb.MalwareSimulatorClient, id string) (int, error) {
 
 	query := fmt.Sprintf("select * from data where record->>'from'='%v';", id)
 	rows, err := db.Query(query)
-	defer rows.Close()
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to query on db")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var data Data
@@ -418,10 +430,10 @@ func task(db *sql.DB, c pb.MalwareSimulatorClient, id string) (int, error) {
 	// Not found a parent task vertice
 	query = fmt.Sprintf("select * from data where record->>'id'='%v';", id)
 	rows, err = db.Query(query)
-	defer rows.Close()
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to connect to db")
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		var data Data
@@ -470,10 +482,10 @@ func getPacket(db *sql.DB, id string) (*Packet, error) {
 
 	query := fmt.Sprintf("select * from data where record->>'id'='%s';", id)
 	rows, err := db.Query(query)
-	defer rows.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query on db")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var data Data

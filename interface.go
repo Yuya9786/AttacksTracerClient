@@ -184,3 +184,46 @@ func sendPacket(c pb.MalwareSimulatorClient, appID int, srcAddress string, srcPo
 
 	return result, nil
 }
+
+func addFile(c pb.MalwareSimulatorClient, nodeID int, name string, data string) (*pb.File, error) {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		time.Second,
+	)
+	defer cancel()
+
+	request := &pb.AddFileRequest{
+		NodeID: int32(nodeID),
+		Name: name,
+		Data: data,
+	}
+
+	fmt.Printf("AddFile(%+v)\n", request)
+	result, err := c.AddFile(ctx, request)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to send AddFile")
+	}
+
+	return result, nil
+}
+
+func readFile(c pb.MalwareSimulatorClient, appID int, name string) (*pb.File, error) {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		time.Second,
+	)
+	defer cancel()
+
+	request := &pb.ReadFileRequest{
+		AppID: int32(appID),
+		Name: name,
+	}
+
+	fmt.Printf("ReadFile(%+v)\n", request)
+	result, err := c.ReadFile(ctx, request)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to send ReadFile")
+	}
+
+	return result, nil
+}

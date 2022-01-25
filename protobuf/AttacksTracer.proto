@@ -22,17 +22,21 @@ service MalwareSimulator {
       returns (Network) {}
   rpc Infect (InfectRequest)
       returns (Node) {}
-  rpc AddRoute (AddRouteRequest) 
+  rpc AddRoute (AddRouteRequest)
       returns (AddRouteReply) {}
   rpc SendPacket (SendPacketRequest)
       returns (SendPacketReply) {}
+  rpc AddFile (AddFileRequest)
+      returns (File) {}
+  rpc ReadFile (ReadFileRequest)
+      returns (File) {}
 }
 
 message ShowNetRequest {}
 
 message WholeNetwork {
   repeated Network networks = 1;
-//  repeated Node isolatedNodes = 2;
+  //  repeated Node isolatedNodes = 2;
 }
 
 message Network {
@@ -118,3 +122,19 @@ message SendPacketRequest {
 }
 
 message SendPacketReply {}
+
+message AddFileRequest {
+  int32 nodeID = 1;
+  string name = 2;
+  string data = 3;
+}
+
+message File {
+  string name = 1;
+  string data = 2;
+}
+
+message ReadFileRequest {
+  int32 appID = 1;
+  string name = 2;
+}

@@ -47,17 +47,22 @@ func prepare(c pb.MalwareSimulatorClient) error {
 	}
 	unknownNodes[resultNode.GetName()] = resultNode
 
-	nodeID = unknownNodes["Router"].GetId()
+	router := unknownNodes["Router"].GetId()
 	netID = networks["Internet"].GetId()
-	_, err = makeConnection(c, int(nodeID), int(netID), "18.181.233.66", 0)
+	_, err = makeConnection(c, int(router), int(netID), "18.181.233.66", 0)
 	if err != nil {
 		return errors.Wrap(err, "failed to send MakeConnection")
 	}
 
 	netID = networks["LAN"].GetId()
-	_, err = makeConnection(c, int(nodeID), int(netID), "172.31.16.1", 20)
+	_, err = makeConnection(c, int(router), int(netID), "172.31.16.1", 20)
 	if err != nil {
 		return errors.Wrap(err, "failed to send MakeConnection")
+	}
+
+	_, err = addFile(c, int(nodeID), "/home/fedora/secret.txt", "secret dataaaaaaaa")
+	if err != nil {
+		return errors.Wrap(err, "failed to send addFile")
 	}
 
 	return nil

@@ -21,10 +21,10 @@ func client() error {
 	var connectionString string = fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=disable", *dbaddr, *dbport, *dbuser, *dbpassword, *dbname)
 
 	db, err := sql.Open("postgres", connectionString)
-	defer db.Close()
 	if err != nil {
 		return errors.Wrap(err, "failed to open db")
 	}
+	defer db.Close()
 
 	if err = db.Ping(); err != nil {
 		return errors.Wrap(err, "failed to connect to db.")
@@ -45,7 +45,7 @@ func client() error {
 		return errors.Wrap(err, "failed to prepare")
 	}
 
-	err = sendReceivePacket(db, c)
+	err = parser(db, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to sendPacket")
 	}

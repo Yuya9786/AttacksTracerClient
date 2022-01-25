@@ -27,6 +27,8 @@ type MalwareSimulatorClient interface {
 	Infect(ctx context.Context, in *InfectRequest, opts ...grpc.CallOption) (*Node, error)
 	AddRoute(ctx context.Context, in *AddRouteRequest, opts ...grpc.CallOption) (*AddRouteReply, error)
 	SendPacket(ctx context.Context, in *SendPacketRequest, opts ...grpc.CallOption) (*SendPacketReply, error)
+	AddFile(ctx context.Context, in *AddFileRequest, opts ...grpc.CallOption) (*File, error)
+	ReadFile(ctx context.Context, in *ReadFileRequest, opts ...grpc.CallOption) (*File, error)
 }
 
 type malwareSimulatorClient struct {
@@ -118,6 +120,24 @@ func (c *malwareSimulatorClient) SendPacket(ctx context.Context, in *SendPacketR
 	return out, nil
 }
 
+func (c *malwareSimulatorClient) AddFile(ctx context.Context, in *AddFileRequest, opts ...grpc.CallOption) (*File, error) {
+	out := new(File)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/AddFile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *malwareSimulatorClient) ReadFile(ctx context.Context, in *ReadFileRequest, opts ...grpc.CallOption) (*File, error) {
+	out := new(File)
+	err := c.cc.Invoke(ctx, "/malwaresimulator.MalwareSimulator/ReadFile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MalwareSimulatorServer is the server API for MalwareSimulator service.
 // All implementations must embed UnimplementedMalwareSimulatorServer
 // for forward compatibility
@@ -131,6 +151,8 @@ type MalwareSimulatorServer interface {
 	Infect(context.Context, *InfectRequest) (*Node, error)
 	AddRoute(context.Context, *AddRouteRequest) (*AddRouteReply, error)
 	SendPacket(context.Context, *SendPacketRequest) (*SendPacketReply, error)
+	AddFile(context.Context, *AddFileRequest) (*File, error)
+	ReadFile(context.Context, *ReadFileRequest) (*File, error)
 	mustEmbedUnimplementedMalwareSimulatorServer()
 }
 
@@ -164,6 +186,12 @@ func (UnimplementedMalwareSimulatorServer) AddRoute(context.Context, *AddRouteRe
 }
 func (UnimplementedMalwareSimulatorServer) SendPacket(context.Context, *SendPacketRequest) (*SendPacketReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendPacket not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) AddFile(context.Context, *AddFileRequest) (*File, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddFile not implemented")
+}
+func (UnimplementedMalwareSimulatorServer) ReadFile(context.Context, *ReadFileRequest) (*File, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadFile not implemented")
 }
 func (UnimplementedMalwareSimulatorServer) mustEmbedUnimplementedMalwareSimulatorServer() {}
 
@@ -340,6 +368,42 @@ func _MalwareSimulator_SendPacket_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MalwareSimulator_AddFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).AddFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/AddFile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).AddFile(ctx, req.(*AddFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MalwareSimulator_ReadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MalwareSimulatorServer).ReadFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/malwaresimulator.MalwareSimulator/ReadFile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MalwareSimulatorServer).ReadFile(ctx, req.(*ReadFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MalwareSimulator_ServiceDesc is the grpc.ServiceDesc for MalwareSimulator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -382,6 +446,14 @@ var MalwareSimulator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendPacket",
 			Handler:    _MalwareSimulator_SendPacket_Handler,
+		},
+		{
+			MethodName: "AddFile",
+			Handler:    _MalwareSimulator_AddFile_Handler,
+		},
+		{
+			MethodName: "ReadFile",
+			Handler:    _MalwareSimulator_ReadFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

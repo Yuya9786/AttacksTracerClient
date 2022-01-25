@@ -40,8 +40,8 @@ func inetAddress(address string) (*InetAddress, error) {
 }
 
 func (a *InetAddress) toIntAddress() int {
-	return (int(a.octet1) & 0xff) << 24 | (int(a.octet2) & 0xff) << 16 | 
-		(int(a.octet3) & 0xff) << 8 | (int(a.octet4) & 0xff)
+	return (int(a.octet1)&0xff)<<24 | (int(a.octet2)&0xff)<<16 |
+		(int(a.octet3)&0xff)<<8 | (int(a.octet4) & 0xff)
 }
 
 func (a *InetAddress) isSameNetwork(b *InetAddress, mask int) bool {
