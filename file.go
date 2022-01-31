@@ -40,8 +40,9 @@ func read(db *sql.DB, c pb.MalwareSimulatorClient, relation *Relation) error {
 		return errors.Wrap(err, "failed to fileCheck")
 	}
 
-	if name != nil {
+	if name == nil {
 		// path is not found
+		println(relation.To, "path not found")
 		return nil
 	}
 
@@ -64,7 +65,7 @@ func read(db *sql.DB, c pb.MalwareSimulatorClient, relation *Relation) error {
 }
 
 func getFileName(db *sql.DB, file string) (*string, error) {
-	query := fmt.Sprintf("select * from data where record->>'from'='%v';", file)
+	query := fmt.Sprintf("select * from data where record->>'from'='%s';", file)
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, errors.Wrap(err, "faile to query")
@@ -99,7 +100,7 @@ func getFileName(db *sql.DB, file string) (*string, error) {
 		return nil, nil
 	}
 
-	query = fmt.Sprintf("select * from data where record->>'id'='%v';", *path)
+	query = fmt.Sprintf("select * from data where record->>'id'='%s';", *path)
 	rows, err = db.Query(query)
 	if err != nil {
 		return nil, errors.Wrap(err, "faile to query")
